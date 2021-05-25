@@ -66,7 +66,21 @@ def compute(half: list, which_half: str):
         count = count + 1
 # '''
 
+threads = 4
 
+code = """
+"""
+
+import uuid
+
+for i in range(0, threads):
+  uid = "a" + str(uuid.uuid4())[:8]
+  code = code + uid+" = threading.Thread(target=compute, args=(firstq,  '"+uid+"'))\n"
+
+
+print(code)
+
+'''
 # ---------------------------- COMPUTE --------------------------------
 first = threading.Thread(target=compute, args=(firstq,  'first'))
 second = threading.Thread(target=compute, args=(secondq, 'second'))
@@ -77,3 +91,4 @@ first.start()
 second.start()
 third.start()
 fourth.start()
+'''
