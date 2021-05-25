@@ -1,91 +1,79 @@
-import json, spacy, pickle
+import threading
+import json
+import spacy
+import pickle
+import random
 
 nlp = spacy.load("en_core_web_sm")
 
 print('Data loading')
 
-#'''
+# '''
 with open('wiki.json') as wiki:
-  data = json.loads(wiki.read())
+    data = json.loads(wiki.read())
 
 print('Data loaded')
 
-# print(data)
+random.shuffle(data)
 
-keywords = {}
 
-count = 0
+def chunks(lst: list, n: int):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
-for article in data:
 
-  print(article['title'])
+cut = list(chunks(data, len(data) // 4))
 
-  # calculate percent
-  percent = str(round((data.index(article) / len(data))*100, 2))
-  #         ^str ^round      ^get percent  ^divide    ^readability
+firstq = cut[0]
+secondq = cut[1]
+thirdq = cut[2]
+fourthq = cut[3]
 
-  print(percent, "%")
 
-  doc = nlp(article['text'])
+def compute(half: list, which_half: str):
 
-  for keyword in doc.ents[:len(doc.ents)//2]:
-    # stttrrr
-    keyword = str(keyword).lower()
-    if not keyword in keywords.keys():
-      keywords[keyword] = [article['title']]
-    
-    else:
-      keywords[keyword].append(article['title'])
-
-  if count == 10:
-    with open("progress.pic", 'wb') as pic:
-      pickle.dump(keywords, pic)
-      print("-------backed up")
+    keywords = {}
+    '''Computes the data from the data.'''
     count = 0
-  
-  count = count + 1
-#'''
+    for article in half:
 
-with open('progress.pic', 'rb') as f:
-  keywords = pickle.load(f)
+        print(article['title'])
 
-#print(keywords)
+        # calculate percent
+        percent = str(round((half.index(article) / len(half))*100, 2))
+        #         ^str ^round      ^get percent  ^divide    ^readability
 
-stop = nlp.Defaults.stop_words
+        print(percent, "%")
 
-while True:
-  query = input("> ")
+        doc = nlp(article['text'])
 
-  if " " in query:
-    results = []
-    querys = query.split(' ')
+        for keyword in doc.ents[:len(doc.ents)//2]:
+            # stttrrr
+            keyword = str(keyword).lower()
+            if not keyword in keywords.keys():
+                keywords[keyword] = [article['title']]
 
-    for q in querys:
-      if q in stop:
-        pass
+            else:
+                keywords[keyword].append(article['title'])
 
-      try:
-        results.append(keywords[q])
+        if count == 10:
+            with open('data/' + which_half + ".pic", 'wb') as pic:
+                pickle.dump(keywords, pic)
+                print("-------backed up")
+            count = 0
 
-      except:
-        pass
-    
-    if len(results) == 0:
-      continue
-
-    result = set(results[0])
-    for s in results[1:]:
-        result.intersection_update(s)
-    
-    for i in result:
-      print(i)
-    
-    continue
+        count = count + 1
+# '''
 
 
-  try:
-    for key in keywords[query]:
-      print(key)
+# ---------------------------- COMPUTE --------------------------------
+first = threading.Thread(target=compute, args=(firstq,  'first'))
+second = threading.Thread(target=compute, args=(secondq, 'second'))
+third = threading.Thread(target=compute, args=(thirdq,  'third'))
+fourth = threading.Thread(target=compute, args=(fourthq, 'fourth'))
 
-  except:
-    print("not found")
+first.start()
+second.start()
+third.start()
+fourth.start()
