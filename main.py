@@ -1,14 +1,13 @@
-import threading
-import json
-import spacy
-import pickle
-import random
+import threading, uuid, json, spacy, pickle, random
 
 nlp = spacy.load("en_core_web_sm")
 
 print('Data loading')
 
-# '''
+code = """
+
+import threading, uuid, json, spacy, pickle, random
+
 with open('wiki.json') as wiki:
     data = json.loads(wiki.read())
 
@@ -18,17 +17,9 @@ random.shuffle(data)
 
 
 def chunks(lst: list, n: int):
-    """Yield successive n-sized chunks from lst."""
+    '''Yield successive n-sized chunks from lst.'''
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
-
-
-cut = list(chunks(data, len(data) // 4))
-
-firstq = cut[0]
-secondq = cut[1]
-thirdq = cut[2]
-fourthq = cut[3]
 
 
 def compute(half: list, which_half: str):
@@ -64,21 +55,39 @@ def compute(half: list, which_half: str):
             count = 0
 
         count = count + 1
-# '''
 
-threads = 4
 
-code = """
 """
 
-import uuid
+threads = 5
+
+uuids = []
+
+code = code + "cut = list(chunks(data, len(data) // " + str(threads) + "))\n"
 
 for i in range(0, threads):
-  uid = "a" + str(uuid.uuid4())[:8]
-  code = code + uid+" = threading.Thread(target=compute, args=(firstq,  '"+uid+"'))\n"
+    uid = "a" + str(uuid.uuid4())[:8]
 
+    uuids.append(uid)
+    code = code + "list" + uid + " = cut[" + str(uuids.index(uid)) + "]\n"
 
-print(code)
+code = code + "\n"
+
+for uid in uuids:
+    code = code + uid + " = threading.Thread(target=compute, args=(list" + uid + ",  '" + uid + "'))\n"
+
+code = code + "\n"
+
+for uid in uuids:
+    code = code + uid + ".start()\n"
+
+code = code + "\n"
+
+if input("run> ") == "y":
+    print(code)
+
+with open('output.py', 'w') as f:
+  f.write(code)
 
 '''
 # ---------------------------- COMPUTE --------------------------------
